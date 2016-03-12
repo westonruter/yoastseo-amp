@@ -10,17 +10,22 @@ if ( ! class_exists( 'YoastSEO_AMP_CSS_Builder', false ) ) {
 
 	class YoastSEO_AMP_CSS_Builder {
 
-		/** @var array Option to CSS lookup map */
+		/**
+		 * @var array Option to CSS lookup map
+		 */
 		private $items = array();
 
+		/**
+		 * @var array
+		 */
 		private $options = array();
 
 		/**
 		 * Add option to CSS map
 		 *
 		 * @param string $option_key Option key.
-		 * @param string $selector   CSS Selector.
-		 * @param string $property   CSS Property that will hold the value of the option.
+		 * @param string $selector CSS Selector.
+		 * @param string $property CSS Property that will hold the value of the option.
 		 */
 		public function add_option( $option_key, $selector, $property ) {
 			$this->items[ $option_key ] = array( 'selector' => $selector, 'property' => $property );
@@ -33,7 +38,7 @@ if ( ! class_exists( 'YoastSEO_AMP_CSS_Builder', false ) ) {
 			$options = YoastSEO_AMP_Options::get();
 
 			$this->options = array_filter( $options );
-			$apply   = array_intersect_key( $this->items, $this->options );
+			$apply         = array_intersect_key( $this->items, $this->options );
 
 			$css = $this->build_css_array( $apply );
 
@@ -48,7 +53,7 @@ if ( ! class_exists( 'YoastSEO_AMP_CSS_Builder', false ) ) {
 		 * @return array
 		 */
 		private function build_css_array( $apply ) {
-			$css    = array();
+			$css = array();
 
 			if ( is_array( $apply ) ) {
 				foreach ( $apply as $key => $placement ) {
