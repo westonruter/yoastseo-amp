@@ -23,32 +23,32 @@ if ( ! class_exists( 'YoastSEO_AMP_Frontend' ) ) {
 		private $options;
 
 		/**
-		 * @var array
-		 */
-		private $wpseo_options;
-
-		/**
 		 * YoastSEO_AMP_Frontend constructor.
 		 */
 		public function __construct() {
-			$this->set_options();
+			$this->options = array_merge( WPSEO_Options::get_all(), YoastSEO_AMP_Options::get() );
 
 			add_action( 'amp_init', array( $this, 'post_types' ) );
-
-			add_action( 'amp_post_template_css', array( $this, 'additional_css' ) );
-			add_action( 'amp_post_template_head', array( $this, 'extra_head' ) );
-			add_action( 'amp_post_template_footer', array( $this, 'extra_footer' ) );
-
-			add_filter( 'amp_post_template_data', array( $this, 'fix_amp_post_data' ) );
-			add_filter( 'amp_post_template_metadata', array( $this, 'fix_amp_post_metadata' ), 10, 2 );
-			add_filter( 'amp_post_template_analytics', array( $this, 'analytics' ) );
-
-			add_filter( 'amp_content_sanitizers', array( $this, 'add_sanitizer' ) );
+			add_action( 'wp', array( $this, 'boot' ) );
 		}
 
-		private function set_options() {
-			$this->wpseo_options = WPSEO_Options::get_all();
-			$this->options       = YoastSEO_AMP_Options::get();
+		/**
+		 * Start all the AMP filters and design classes
+		 */
+		public function boot() {
+			if ( ! is_amp_endpoint() ) {
+				return;
+			}
+			
+			add_filter( 'amp_post_template_data', array( $this, 'fix_amp_post_data' ) );
+			add_filter( 'amp_post_template_metadata', array( $this, 'fix_amp_post_metadata' ), 10, 2 );
+			add_filter( 'amp_content_sanitizers', array( $this, 'add_sanitizer' ) );
+
+			require_once 'class-analytics.php';
+			new YoastSEO_AMP_Analytics();
+
+			require_once 'class-design.php';
+			new YoastSEO_AMP_Design();
 		}
 
 		/**
@@ -64,42 +64,6 @@ if ( ! class_exists( 'YoastSEO_AMP_Frontend' ) ) {
 			$sanitizers['Yoast_AMP_Blacklist_Sanitizer'] = array();
 
 			return $sanitizers;
-		}
-
-		/**
-		 * If analytics tracking has been set, output it now.
-		 *
-		 * @param array $analytics
-		 *
-		 * @return array
-		 */
-		public function analytics( $analytics ) {
-			if ( isset( $this->options['analytics-extra'] ) && ! empty( $this->options['analytics-extra'] ) ) {
-				return $analytics;
-			}
-
-			if ( ! class_exists( 'Yoast_GA_Options' ) || Yoast_GA_Options::instance()->get_tracking_code() === null ) {
-				return $analytics;
-			}
-			$UA = Yoast_GA_Options::instance()->get_tracking_code();
-
-			$analytics['yst-googleanalytics'] = array(
-				'type'        => 'googleanalytics',
-				'attributes'  => array(),
-				'config_data' => array(
-					'vars'     => array(
-						'account' => $UA
-					),
-					'triggers' => array(
-						'trackPageview' => array(
-							'on'      => 'visible',
-							'request' => 'pageview',
-						),
-					),
-				),
-			);
-
-			return $analytics;
 		}
 
 		/**
@@ -180,75 +144,18 @@ if ( ! class_exists( 'YoastSEO_AMP_Frontend' ) ) {
 		}
 
 		/**
-		 * Add additional CSS to the AMP output
-		 */
-		public function additional_css() {
-
-			require 'views/additional-css.php';
-
-			$css_builder = new YoastSEO_AMP_CSS_Builder();
-			$css_builder->add_option( 'header-color', 'nav.amp-wp-title-bar', 'background' );
-			$css_builder->add_option( 'headings-color', '.amp-wp-title, h2, h3, h4', 'color' );
-			$css_builder->add_option( 'text-color', '.amp-wp-content', 'color' );
-
-			$css_builder->add_option( 'blockquote-bg-color', '.amp-wp-content blockquote', 'background-color' );
-			$css_builder->add_option( 'blockquote-border-color', '.amp-wp-content blockquote', 'border-color' );
-			$css_builder->add_option( 'blockquote-text-color', '.amp-wp-content blockquote', 'color' );
-
-			$css_builder->add_option( 'link-color', 'a, a:active, a:visited', 'color' );
-			$css_builder->add_option( 'link-color-hover', 'a:hover, a:focus', 'color' );
-
-			$css_builder->add_option( 'meta-color', '.amp-wp-meta li, .amp-wp-meta li a', 'color' );
-
-			echo $css_builder->build();
-
-			if ( ! empty( $this->options['extra-css'] ) ) {
-				$safe_text = strip_tags($this->options['extra-css']);
-				$safe_text = wp_check_invalid_utf8( $safe_text );
-				$safe_text = _wp_specialchars( $safe_text, ENT_NOQUOTES );
-				echo $safe_text;
-			}
-		}
-
-		/**
-		 * Outputs extra code in the head, if set
-		 */
-		public function extra_head() {
-			$options = WPSEO_Options::get_option( 'wpseo_social' );
-
-			if ( $options['twitter'] === true ) {
-				WPSEO_Twitter::get_instance();
-			}
-
-			if ( $options['opengraph'] === true ) {
-				$GLOBALS['wpseo_og'] = new WPSEO_OpenGraph;
-			}
-
-			do_action( 'wpseo_opengraph' );
-
-			echo strip_tags( $this->options['extra-head'], '<link><meta>' );
-		}
-
-		/**
-		 * Outputs analytics code in the footer, if set
-		 */
-		public function extra_footer() {
-			echo $this->options['analytics-extra'];
-		}
-
-		/**
 		 * Builds the organization object if needed.
 		 *
 		 * @param array $metadata
 		 */
 		private function build_organization_object( &$metadata ) {
 			// While it's using the blog name, it's actually outputting the company name.
-			if ( ! empty( $this->wpseo_options['company_name'] ) ) {
-				$metadata['publisher']['name'] = $this->wpseo_options['company_name'];
+			if ( ! empty( $this->options['company_name'] ) ) {
+				$metadata['publisher']['name'] = $this->options['company_name'];
 			}
 
 			// The logo needs to be 600px wide max, 60px high max.
-			$logo = $this->get_image_object( $this->wpseo_options['company_logo'], array( 600, 60 ) );
+			$logo = $this->get_image_object( $this->options['company_logo'], array( 600, 60 ) );
 			if ( is_array( $logo ) ) {
 				$metadata['publisher']['logo'] = $logo;
 			}
