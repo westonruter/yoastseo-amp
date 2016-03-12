@@ -23,7 +23,10 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 		public function __construct() {
 			$this->options = YoastSEO_AMP_Options::get();
 
-			add_action( 'amp_post_template_footer', array( $this, 'extra_footer' ) );
+			if ( isset( $this->options['analytics-extra'] ) && ! empty( $this->options['analytics-extra'] ) ) {
+				add_action( 'amp_post_template_footer', array( $this, 'extra_footer' ) );
+				return;
+			}
 			add_filter( 'amp_post_template_analytics', array( $this, 'analytics' ) );
 		}
 
@@ -35,10 +38,6 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 		 * @return array
 		 */
 		public function analytics( $analytics ) {
-			if ( isset( $this->options['analytics-extra'] ) && ! empty( $this->options['analytics-extra'] ) ) {
-				return $analytics;
-			}
-
 			if ( ! class_exists( 'Yoast_GA_Options' ) || Yoast_GA_Options::instance()->get_tracking_code() === null ) {
 				return $analytics;
 			}
