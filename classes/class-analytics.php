@@ -19,7 +19,7 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 
 		/**
 		 * The GA AMP tracking code, shown as an array
-		 * 
+		 *
 		 * @var array
 		 */
 		private $tracking_code = array(
@@ -44,7 +44,7 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 		public function __construct() {
 			$this->options = YoastSEO_AMP_Options::get();
 
-			if ( isset( $this->options['analytics-extra'] ) && ! empty( $this->options['analytics-extra'] ) ) {
+			if ( ! empty( $this->options['analytics-extra'] ) ) {
 				add_action( 'amp_post_template_footer', array( $this, 'extra_footer' ) );
 				return;
 			}

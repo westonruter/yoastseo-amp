@@ -21,7 +21,7 @@ if ( ! class_exists( 'YoastSEO_AMP_Design' ) ) {
 		 * YoastSEO_AMP_Frontend constructor.
 		 */
 		public function __construct() {
-			$this->options = array_merge( WPSEO_Options::get_all(), YoastSEO_AMP_Options::get() );
+			$this->options = array_merge( WPSEO_Options::get_options( array( 'wpseo_social' ) ), YoastSEO_AMP_Options::get() );
 
 			add_action( 'amp_post_template_css', array( $this, 'additional_css' ) );
 			add_action( 'amp_post_template_head', array( $this, 'extra_head' ) );
