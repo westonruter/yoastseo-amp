@@ -18,6 +18,27 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 		private $options;
 
 		/**
+		 * The GA AMP tracking code, shown as an array
+		 * 
+		 * @var array
+		 */
+		private $tracking_code = array(
+			'type'        => 'googleanalytics',
+			'attributes'  => array(),
+			'config_data' => array(
+				'vars'     => array(
+					'account' => ''
+				),
+				'triggers' => array(
+					'trackPageview' => array(
+						'on'      => 'visible',
+						'request' => 'pageview',
+					),
+				),
+			),
+		);
+
+		/**
 		 * YoastSEO_AMP_Frontend constructor.
 		 */
 		public function __construct() {
@@ -41,23 +62,9 @@ if ( ! class_exists( 'YoastSEO_AMP_Analytics' ) ) {
 			if ( ! class_exists( 'Yoast_GA_Options' ) || Yoast_GA_Options::instance()->get_tracking_code() === null ) {
 				return $analytics;
 			}
-			$UA = Yoast_GA_Options::instance()->get_tracking_code();
+			$this->tracking_code['config_data']['vars']['account'] = Yoast_GA_Options::instance()->get_tracking_code();
 
-			$analytics['yst-googleanalytics'] = array(
-				'type'        => 'googleanalytics',
-				'attributes'  => array(),
-				'config_data' => array(
-					'vars'     => array(
-						'account' => $UA
-					),
-					'triggers' => array(
-						'trackPageview' => array(
-							'on'      => 'visible',
-							'request' => 'pageview',
-						),
-					),
-				),
-			);
+			$analytics['yst-googleanalytics'] = $this->tracking_code;
 
 			return $analytics;
 		}
